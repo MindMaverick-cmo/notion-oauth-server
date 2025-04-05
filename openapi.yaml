@@ -1,0 +1,37 @@
+openapi: 3.0.0
+info:
+  title: Notion OAuth Server
+  version: 1.0.0
+  description: Получение access_token от Notion через промежуточный сервер
+
+paths:
+  /token:
+    post:
+      summary: Получить access_token по коду авторизации
+      operationId: getNotionToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                  description: Код авторизации Notion
+              required:
+                - code
+      responses:
+        '200':
+          description: Access token получен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  workspace_id:
+                    type: string
+                  bot_id:
+                    type: string

@@ -1,0 +1,16 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "Notion OAuth Server",
+  "name_for_model": "notion_oauth",
+  "description_for_model": "Позволяет обменивать code от Notion на access_token через промежуточный сервер",
+  "auth": {
+    "type": "none"
+  },
+  "api": {
+    "type": "openapi",
+    "url": "https://notion-oauth-server.onrender.com/openapi.yaml"
+  },
+  "logo_url": "https://notion-oauth-server.onrender.com/logo.png",
+  "contact_email": "you@example.com",
+  "legal_info_url": "https://yourdomain.com/privacy"
+}
