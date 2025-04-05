@@ -1,5 +1,4 @@
-
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 import requests
 import os
 
@@ -34,6 +33,16 @@ def oauth_callback():
         return f"Error getting token: {response.text}", 400
 
     return jsonify(response.json())
+
+# 👇 ЭТО ДОБАВЛЯЕМ 👇
+@app.route('/openapi.yaml')
+def serve_openapi():
+    return send_from_directory('.', 'openapi.yaml', mimetype='text/yaml')
+
+@app.route('/ai-plugin.json')
+def serve_ai_plugin():
+    return send_from_directory('.', 'ai-plugin.json', mimetype='application/json')
+# 👆 ЭТО ДОБАВЛЯЕМ 👆
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
