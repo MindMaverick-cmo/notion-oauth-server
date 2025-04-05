@@ -1,4 +1,3 @@
-
 from flask import Flask, request, jsonify
 import requests
 import os
@@ -10,8 +9,8 @@ CLIENT_ID = os.environ.get("NOTION_CLIENT_ID")
 CLIENT_SECRET = os.environ.get("NOTION_CLIENT_SECRET")
 REDIRECT_URI = os.environ.get("REDIRECT_URI")
 
-# Путь к файлу токена, который будет сохраняться между перезапусками
-TOKEN_FILE = "/data/token.json" 
+# Путь к файлу токена
+TOKEN_FILE = "storage/token.json"
 
 def save_token(data):
     os.makedirs(os.path.dirname(TOKEN_FILE), exist_ok=True)
@@ -52,12 +51,12 @@ def oauth_callback():
     save_token(token_data)
     return jsonify(token_data)
 
-@app.route("/token/latest")
-def latest_token():
-    token_data = load_token()
-    if not token_data:
+@app.route("/token/latest", methods=["GET"])
+def get_latest_token():
+    token = load_token()
+    if not token:
         return jsonify({"error": "No token found"}), 404
-    return jsonify(token_data)
+    return jsonify(token)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
