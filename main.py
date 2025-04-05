@@ -11,7 +11,7 @@ CLIENT_SECRET = os.environ.get("NOTION_CLIENT_SECRET")
 REDIRECT_URI = os.environ.get("REDIRECT_URI")
 
 # Путь к файлу токена, который будет сохраняться между перезапусками
-TOKEN_FILE = "/data/token.json"
+TOKEN_FILE = "storage/token.json"
 
 def save_token(data):
     os.makedirs(os.path.dirname(TOKEN_FILE), exist_ok=True)
