@@ -2,7 +2,7 @@ services:
   - type: web
     name: notion-oauth-server
     env: python
-    startCommand: "pip install -r requirements.txt && python main.py"
+    startCommand: gunicorn main:app
     plan: free
     envVars:
       - key: NOTION_CLIENT_ID
