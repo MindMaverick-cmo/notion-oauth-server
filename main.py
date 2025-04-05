@@ -1,8 +1,8 @@
-from flask import Flask, request, jsonify, send_from_directory
+
+from flask import Flask, request, jsonify
 import requests
 import os
 import json
-import base64
 
 app = Flask(__name__)
 
@@ -10,7 +10,19 @@ CLIENT_ID = os.environ.get("NOTION_CLIENT_ID")
 CLIENT_SECRET = os.environ.get("NOTION_CLIENT_SECRET")
 REDIRECT_URI = os.environ.get("REDIRECT_URI")
 
-TOKEN_FILE = "latest_token.json"
+# Путь к файлу токена, который будет сохраняться между перезапусками
+TOKEN_FILE = "/data/token.json"
+
+def save_token(data):
+    os.makedirs(os.path.dirname(TOKEN_FILE), exist_ok=True)
+    with open(TOKEN_FILE, "w") as f:
+        json.dump(data, f)
+
+def load_token():
+    if os.path.exists(TOKEN_FILE):
+        with open(TOKEN_FILE, "r") as f:
+            return json.load(f)
+    return None
 
 @app.route("/")
 def index():
@@ -37,61 +49,15 @@ def oauth_callback():
         return f"Error getting token: {response.text}", 400
 
     token_data = response.json()
-
-    with open(TOKEN_FILE, "w") as f:
-        json.dump(token_data, f)
-
+    save_token(token_data)
     return jsonify(token_data)
 
-@app.route("/token/latest", methods=["GET"])
-def get_latest_token():
-    if not os.path.exists(TOKEN_FILE):
+@app.route("/token/latest")
+def latest_token():
+    token_data = load_token()
+    if not token_data:
         return jsonify({"error": "No token found"}), 404
-
-    with open(TOKEN_FILE, "r") as f:
-        token_data = json.load(f)
-    return jsonify({"access_token": token_data.get("access_token")})
-
-@app.route("/token/refresh", methods=["POST"])
-def refresh_token():
-    if not os.path.exists(TOKEN_FILE):
-        return jsonify({"error": "No refresh_token available"}), 404
-
-    with open(TOKEN_FILE, "r") as f:
-        token_data = json.load(f)
-
-    refresh_token = token_data.get("refresh_token")
-    if not refresh_token:
-        return jsonify({"error": "Missing refresh_token"}), 400
-
-    auth_string = f"{CLIENT_ID}:{CLIENT_SECRET}"
-    headers = {
-        "Authorization": "Basic " + base64.b64encode(auth_string.encode()).decode(),
-        "Content-Type": "application/json"
-    }
-
-    body = {
-        "grant_type": "refresh_token",
-        "refresh_token": refresh_token
-    }
-
-    response = requests.post("https://api.notion.com/v1/oauth/token", headers=headers, json=body)
-    if response.status_code != 200:
-        return jsonify({"error": "Failed to refresh token", "details": response.text}), 400
-
-    new_token_data = response.json()
-    with open(TOKEN_FILE, "w") as f:
-        json.dump(new_token_data, f)
-
-    return jsonify(new_token_data)
-
-@app.route('/openapi.yaml')
-def serve_openapi():
-    return send_from_directory('.', 'openapi.yaml', mimetype='text/yaml')
-
-@app.route('/ai-plugin.json')
-def serve_ai_plugin():
-    return send_from_directory('.', 'ai-plugin.json', mimetype='application/json')
+    return jsonify(token_data)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
