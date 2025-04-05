@@ -1,3 +1,4 @@
+
 from flask import Flask, request, jsonify
 import requests
 import os
@@ -8,14 +9,7 @@ app = Flask(__name__)
 CLIENT_ID = os.environ.get("NOTION_CLIENT_ID")
 CLIENT_SECRET = os.environ.get("NOTION_CLIENT_SECRET")
 REDIRECT_URI = os.environ.get("REDIRECT_URI")
-
-# Путь к файлу токена
 TOKEN_FILE = "storage/token.json"
-
-def save_token(data):
-    os.makedirs(os.path.dirname(TOKEN_FILE), exist_ok=True)
-    with open(TOKEN_FILE, "w") as f:
-        json.dump(data, f)
 
 def load_token():
     if os.path.exists(TOKEN_FILE):
@@ -27,39 +21,34 @@ def load_token():
 def index():
     return "✅ Notion OAuth Redirect Server is running!"
 
-@app.route("/callback")
-def oauth_callback():
-    code = request.args.get("code")
-    if not code:
-        return "Missing code", 400
-
-    response = requests.post(
-        "https://api.notion.com/v1/oauth/token",
-        auth=(CLIENT_ID, CLIENT_SECRET),
-        data={
-            "grant_type": "authorization_code",
-            "code": code,
-            "redirect_uri": REDIRECT_URI,
-        },
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
-    )
-
-    if response.status_code != 200:
-        return f"Error getting token: {response.text}", 400
-
-    token_data = response.json()
-    save_token(token_data)
+@app.route("/token/latest")
+def latest_token():
+    token_data = load_token()
+    if not token_data:
+        return jsonify({"error": "No token found"}), 404
     return jsonify(token_data)
 
-@app.route("/token/latest", methods=["GET"])
-def get_latest_token():
-    token = load_token()
-    if not token:
-        return jsonify({"error": "No token found"}), 404
-    return jsonify(token)
+@app.route("/create-page", methods=["POST"])
+def create_page():
+    token_data = load_token()
+    if not token_data or "access_token" not in token_data:
+        return jsonify({"error": "Access token not found"}), 401
+
+    access_token = token_data["access_token"]
+    notion_url = "https://api.notion.com/v1/pages"
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json",
+        "Notion-Version": "2022-06-28"
+    }
+
+    payload = request.get_json()
+    response = requests.post(notion_url, headers=headers, json=payload)
+
+    if response.status_code != 200:
+        return jsonify({"error": response.text}), response.status_code
+
+    return jsonify(response.json())
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
-    # Это нужно, чтобы gunicorn знал, как запустить приложение
-app = app
-
